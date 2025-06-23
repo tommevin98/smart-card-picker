@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Smart Card Picker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">Smart Card Picker</h1>
+
+    <div id="recommendation" class="card-highlight">
+      <!-- Recommended card will appear here -->
+    </div>
+
+    <h2>Your Cards</h2>
+    <div id="card-list" class="card-grid"></div>
+
+    <h2>Add a Card</h2>
+    <form id="cardForm" class="card-form" enctype="multipart/form-data">
+      <div class="input-group">
+        <input type="text" id="cardName" placeholder="Card Name" required />
+      </div>
+      <div class="input-group">
+        <input type="number" id="statementDate" placeholder="Statement Date (1-31)" required />
+      </div>
+      <div class="input-group">
+        <input type="number" id="dueDate" placeholder="Due Date (1-31)" required />
+      </div>
+      <div class="input-group">
+        <input type="file" id="cardImage" accept="image/*" />
+      </div>
+      <button type="submit">Save Card</button>
+    </form>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
