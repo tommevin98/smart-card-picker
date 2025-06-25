@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,26 +9,23 @@
 </head>
 <body>
   <div class="container">
-    <div class="system-date" id="systemDate"></div>
-    <div class="card-highlight" id="cardHighlight" style="display: none;"></div>
-    <h2 class="title">Your Cards</h2>
-    <div class="card-grid" id="cardGrid"></div>
-    <h2 class="title">Add / Edit Card</h2>
-    <form class="card-form" id="cardForm">
-      <div class="input-group">
+    <h1>Credit Card Manager</h1>
+    <p id="systemDate"></p>
+    <div id="cardHighlight" class="highlight"></div>
+
+    <div id="cardGrid" class="card-grid"></div>
+    <button id="showFormBtn" style="display: none;">➕ Add New Card</button>
+
+    <div id="formContainer" style="display: none;">
+      <h2>Add / Edit Card</h2>
+      <form id="cardForm">
         <input type="text" id="cardName" placeholder="Card Name" required />
-      </div>
-      <div class="input-group">
-        <input type="number" id="statementDate" placeholder="Statement Date (1-31)" min="1" max="31" required />
-      </div>
-      <div class="input-group">
-        <input type="number" id="dueDate" placeholder="Due Date (1-31)" min="1" max="31" required />
-      </div>
-      <div class="input-group">
+        <input type="number" id="statementDate" placeholder="Statement Date (1-31)" required min="1" max="31" />
+        <input type="number" id="dueDate" placeholder="Due Date (1-31)" required min="1" max="31" />
         <input type="file" id="cardImage" accept="image/*" />
-      </div>
-      <button type="submit">Save Card</button>
-    </form>
+        <button type="submit">Save Card</button>
+      </form>
+    </div>
   </div>
   <script src="app.js"></script>
 </body>

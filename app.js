@@ -1,17 +1,23 @@
+
 const form = document.getElementById("cardForm");
 const cardGrid = document.getElementById("cardGrid");
 const highlightBox = document.getElementById("cardHighlight");
 const systemDate = document.getElementById("systemDate");
+const formContainer = document.getElementById("formContainer");
+const showFormBtn = document.getElementById("showFormBtn");
 
 let cards = JSON.parse(localStorage.getItem("cards")) || [];
 let editingIndex = null;
 
-// ----- Monthly reset logic -----
+showFormBtn.onclick = () => {
+  formContainer.style.display = "block";
+  showFormBtn.style.display = "none";
+};
+
 function resetPaidStatusIfNewMonth() {
   const now = new Date();
-  const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+  const currentMonthKey = now.getFullYear() + "-" + now.getMonth();
   const lastResetMonth = localStorage.getItem("lastResetMonth");
-
   if (currentMonthKey !== lastResetMonth) {
     Object.keys(localStorage).forEach((key) => {
       if (key.endsWith("_paid")) {
@@ -22,78 +28,51 @@ function resetPaidStatusIfNewMonth() {
   }
 }
 
-// ----- Push notification -----
-function checkDueNotifications() {
-  if (!("Notification" in window)) return;
+function getPaidStatus(card) {
+  const now = new Date();
+  return localStorage.getItem(card.name + "_paid") === now.getFullYear() + "-" + now.getMonth();
+}
 
-  if (Notification.permission === "default") {
-    Notification.requestPermission();
-  }
+function markAsPaid(index) {
+  const now = new Date();
+  localStorage.setItem(cards[index].name + "_paid", now.getFullYear() + "-" + now.getMonth());
+  renderCards();
+}
 
-  if (Notification.permission === "granted") {
-    const today = new Date();
-    const todayDay = today.getDate();
-
-    cards.forEach((card) => {
-      const paid = getPaidStatus(card);
-      const daysUntilDue = (card.dueDate - todayDay + 31) % 31;
-
-      if (!paid && daysUntilDue === 5) {
-        new Notification("💳 Credit Card Due Soon", {
-          body: `${card.name} is due in 5 days (${card.dueDate}th)!`,
-        });
-      }
-    });
+function formatSuffix(n) {
+  if (n > 3 && n < 21) return "th";
+  switch (n % 10) {
+    case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th";
   }
 }
 
 function formatDateLabel(date) {
   const now = new Date();
-  const currentDay = now.getDate();
-  return date >= currentDay
-    ? `${date}th of this month`
-    : `${date}th of next month`;
-}
-
-function getPaidStatus(card) {
-  const today = new Date();
-  const key = card.name + "_paid";
-  const lastPaid = localStorage.getItem(key);
-  return lastPaid === today.getFullYear() + "-" + today.getMonth();
-}
-
-function markAsPaid(index) {
-  const card = cards[index];
-  const today = new Date();
-  const key = card.name + "_paid";
-  localStorage.setItem(key, today.getFullYear() + "-" + today.getMonth());
-  renderCards();
+  return date >= now.getDate()
+    ? `${date}${formatSuffix(date)} of this month`
+    : `${date}${formatSuffix(date)} of next month`;
 }
 
 function renderCards() {
-  const today = new Date();
-  const todayDay = today.getDate();
-  const todayString = today.toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  });
-  systemDate.textContent = "📅 Today is: " + todayString;
-
+  const now = new Date();
+  systemDate.textContent = "📅 Today is: " + now.toDateString();
   cardGrid.innerHTML = "";
-  let bestCard = null;
-  let maxDays = -1;
+  let bestCard = null, maxDays = -1;
 
-  cards.forEach((card, index) => {
-    const days = (card.statementDate - todayDay + 31) % 31;
-    if (days > maxDays) {
-      maxDays = days;
-      bestCard = { name: card.name, days };
+  cards.forEach((card, i) => {
+    const daysUntilStmt = (card.statementDate - now.getDate() + 31) % 31;
+    if (daysUntilStmt > maxDays) {
+      bestCard = card;
+      maxDays = daysUntilStmt;
     }
 
     const cardEl = document.createElement("div");
     cardEl.className = "card";
+
+    const cardDueDate = new Date(now.getFullYear(), now.getMonth(), card.dueDate);
+    if (!getPaidStatus(card) && cardDueDate < now) {
+      cardEl.classList.add("overdue");
+    }
 
     const cardHeader = document.createElement("div");
     cardHeader.className = "card-header";
@@ -110,60 +89,60 @@ function renderCards() {
     const name = document.createElement("strong");
     name.textContent = card.name;
     cardLeft.appendChild(name);
+    cardHeader.appendChild(cardLeft);
 
-    const cardIcons = document.createElement("div");
-    cardIcons.className = "card-icons";
+    const icons = document.createElement("div");
+    icons.className = "card-icons";
 
     const editBtn = document.createElement("button");
     editBtn.textContent = "✏️";
-    editBtn.onclick = () => editCard(index);
-    cardIcons.appendChild(editBtn);
+    editBtn.onclick = () => editCard(i);
+    icons.appendChild(editBtn);
 
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "🗑️";
-    deleteBtn.onclick = () => deleteCard(index);
-    cardIcons.appendChild(deleteBtn);
+    deleteBtn.onclick = () => deleteCard(i);
+    icons.appendChild(deleteBtn);
 
-    cardHeader.appendChild(cardLeft);
-    cardHeader.appendChild(cardIcons);
-
-    const due = document.createElement("p");
-    const dueLabel = formatDateLabel(card.dueDate);
-
-    const paid = getPaidStatus(card);
-    const overdue = !paid && card.dueDate < todayDay;
-
-    due.textContent = overdue
-      ? `Due: ${dueLabel} (Overdue)`
-      : `Due: ${dueLabel}`;
-
-    const paidBtn = document.createElement("button");
-    paidBtn.textContent = "✅ Mark as Paid";
-    paidBtn.style.marginTop = "8px";
-    paidBtn.onclick = () => markAsPaid(index);
-
+    cardHeader.appendChild(icons);
     cardEl.appendChild(cardHeader);
-    cardEl.appendChild(due);
-    if (!paid) cardEl.appendChild(paidBtn);
+
+    const dueP = document.createElement("p");
+    dueP.textContent = `Due: ${formatDateLabel(card.dueDate)}`;
+    cardEl.appendChild(dueP);
+
+    if (!getPaidStatus(card)) {
+      const paidBtn = document.createElement("button");
+      paidBtn.textContent = "✅ Mark as Paid";
+      paidBtn.onclick = () => markAsPaid(i);
+      cardEl.appendChild(paidBtn);
+    }
 
     cardGrid.appendChild(cardEl);
   });
 
   if (bestCard) {
     highlightBox.style.display = "block";
-    highlightBox.innerHTML = `<strong>${bestCard.name}</strong><br>Longest credit period – statement in ${bestCard.days} days.`;
+    highlightBox.innerHTML = `<strong>Use ${bestCard.name}</strong><br>Longest credit period – statement in ${maxDays} days.`;
   } else {
     highlightBox.style.display = "none";
   }
+
+  if (cards.length === 0) {
+    formContainer.style.display = "block";
+    showFormBtn.style.display = "none";
+  } else {
+    formContainer.style.display = "none";
+    showFormBtn.style.display = "block";
+  }
 }
 
-form.onsubmit = function (e) {
+form.onsubmit = (e) => {
   e.preventDefault();
   const name = document.getElementById("cardName").value.trim();
   const statementDate = parseInt(document.getElementById("statementDate").value);
   const dueDate = parseInt(document.getElementById("dueDate").value);
-  const imageInput = document.getElementById("cardImage");
-  const file = imageInput.files[0];
+  const file = document.getElementById("cardImage").files[0];
 
   const saveCard = (image = "") => {
     const newCard = { name, statementDate, dueDate, image };
@@ -180,35 +159,28 @@ form.onsubmit = function (e) {
 
   if (file) {
     const reader = new FileReader();
-    reader.onload = () => {
-      saveCard(reader.result);
-    };
+    reader.onload = () => saveCard(reader.result);
     reader.readAsDataURL(file);
   } else {
-    const existingImage = (editingIndex !== null && cards[editingIndex])
-      ? cards[editingIndex].image
-      : "";
-    saveCard(existingImage);
-  };
+    saveCard(editingIndex !== null && cards[editingIndex] ? cards[editingIndex].image : "");
+  }
+};
 
-function deleteCard(index) {
+function deleteCard(i) {
   if (confirm("Delete this card?")) {
-    cards.splice(index, 1);
+    cards.splice(i, 1);
     localStorage.setItem("cards", JSON.stringify(cards));
     renderCards();
   }
 }
 
-function editCard(index) {
-  const card = cards[index];
-  document.getElementById("cardName").value = card.name;
-  document.getElementById("statementDate").value = card.statementDate;
-  document.getElementById("dueDate").value = card.dueDate;
-  editingIndex = index;
+function editCard(i) {
+  const c = cards[i];
+  document.getElementById("cardName").value = c.name;
+  document.getElementById("statementDate").value = c.statementDate;
+  document.getElementById("dueDate").value = c.dueDate;
+  editingIndex = i;
 }
 
-// Run on page load
 resetPaidStatusIfNewMonth();
 renderCards();
-checkDueNotifications();
-}
