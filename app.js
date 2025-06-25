@@ -1,4 +1,3 @@
-
 const form = document.getElementById("cardForm");
 const cardGrid = document.getElementById("cardGrid");
 const highlightBox = document.getElementById("cardHighlight");
@@ -20,9 +19,7 @@ function resetPaidStatusIfNewMonth() {
   const lastResetMonth = localStorage.getItem("lastResetMonth");
   if (currentMonthKey !== lastResetMonth) {
     Object.keys(localStorage).forEach((key) => {
-      if (key.endsWith("_paid")) {
-        localStorage.removeItem(key);
-      }
+      if (key.endsWith("_paid")) localStorage.removeItem(key);
     });
     localStorage.setItem("lastResetMonth", currentMonthKey);
   }
@@ -45,7 +42,6 @@ function formatSuffix(n) {
     case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th";
   }
 }
-
 function formatDateLabel(date) {
   const now = new Date();
   return date >= now.getDate()
@@ -59,7 +55,7 @@ function renderCards() {
   cardGrid.innerHTML = "";
   let bestCard = null, maxDays = -1;
 
-  cards.forEach((card, i) => {
+  cards.forEach((card, index) => {
     const daysUntilStmt = (card.statementDate - now.getDate() + 31) % 31;
     if (daysUntilStmt > maxDays) {
       bestCard = card;
@@ -96,12 +92,12 @@ function renderCards() {
 
     const editBtn = document.createElement("button");
     editBtn.textContent = "✏️";
-    editBtn.onclick = () => editCard(i);
+    editBtn.onclick = () => editCard(index);
     icons.appendChild(editBtn);
 
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "🗑️";
-    deleteBtn.onclick = () => deleteCard(i);
+    deleteBtn.onclick = () => deleteCard(index);
     icons.appendChild(deleteBtn);
 
     cardHeader.appendChild(icons);
@@ -114,7 +110,7 @@ function renderCards() {
     if (!getPaidStatus(card)) {
       const paidBtn = document.createElement("button");
       paidBtn.textContent = "✅ Mark as Paid";
-      paidBtn.onclick = () => markAsPaid(i);
+      paidBtn.onclick = () => markAsPaid(index);
       cardEl.appendChild(paidBtn);
     }
 
@@ -162,24 +158,29 @@ form.onsubmit = (e) => {
     reader.onload = () => saveCard(reader.result);
     reader.readAsDataURL(file);
   } else {
-    saveCard(editingIndex !== null && cards[editingIndex] ? cards[editingIndex].image : "");
+    const existingImage = editingIndex !== null && cards[editingIndex]
+      ? cards[editingIndex].image
+      : "";
+    saveCard(existingImage);
   }
 };
 
-function deleteCard(i) {
+function deleteCard(index) {
   if (confirm("Delete this card?")) {
-    cards.splice(i, 1);
+    cards.splice(index, 1);
     localStorage.setItem("cards", JSON.stringify(cards));
     renderCards();
   }
 }
 
-function editCard(i) {
-  const c = cards[i];
-  document.getElementById("cardName").value = c.name;
-  document.getElementById("statementDate").value = c.statementDate;
-  document.getElementById("dueDate").value = c.dueDate;
-  editingIndex = i;
+function editCard(index) {
+  const card = cards[index];
+  document.getElementById("cardName").value = card.name;
+  document.getElementById("statementDate").value = card.statementDate;
+  document.getElementById("dueDate").value = card.dueDate;
+  editingIndex = index;
+  formContainer.style.display = "block";
+  showFormBtn.style.display = "none";
 }
 
 resetPaidStatusIfNewMonth();
