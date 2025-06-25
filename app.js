@@ -185,10 +185,11 @@ form.onsubmit = function (e) {
     };
     reader.readAsDataURL(file);
   } else {
-    const existingImage = editingIndex !== null ? cards[editingIndex].image : "";
+    const existingImage = (editingIndex !== null && cards[editingIndex])
+      ? cards[editingIndex].image
+      : "";
     saveCard(existingImage);
-  }
-};
+  };
 
 function deleteCard(index) {
   if (confirm("Delete this card?")) {
@@ -210,3 +211,4 @@ function editCard(index) {
 resetPaidStatusIfNewMonth();
 renderCards();
 checkDueNotifications();
+}
